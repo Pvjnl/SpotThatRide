@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registreren - SpotThatRide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Jouw Supabase Client Configuratie -->
+    <script src="js/supabaseClient.js"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen py-12">
+
+    <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
+        <div class="text-center mb-8">
+            <a href="index.html" class="text-3xl font-bold text-orange-500">SpotThatRide</a>
+        </div>
+        <h2 class="text-2xl font-semibold text-center text-gray-700 mb-6">Account Aanmaken</h2>
+
+        <!-- Registration Form -->
+        <form id="registerForm">
+            <div class="mb-4">
+                <label for="name" class="block text-gray-700 text-sm font-bold mb-2">Volledige Naam</label>
+                <input type="text" id="name" name="name" required
+                       class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                       placeholder="Jan Jansen">
+            </div>
+
+            <div class="mb-4">
+                <label for="email" class="block text-gray-700 text-sm font-bold mb-2">Emailadres</label>
+                <input type="email" id="email" name="email" required
+                       class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                       placeholder="jouw@email.com">
+            </div>
+
+            <div class="mb-4">
+                <label for="password" class="block text-gray-700 text-sm font-bold mb-2">Wachtwoord</label>
+                <input type="password" id="password" name="password" required
+                       class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                       placeholder="********">
+            </div>
+
+            <div class="mb-6">
+                <label for="confirmPassword" class="block text-gray-700 text-sm font-bold mb-2">Bevestig Wachtwoord</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required
+                       class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
+                       placeholder="********">
+            </div>
+
+             <div class="mb-4">
+                <label for="profilePictureUrl" class="block text-gray-700 text-sm font-bold mb-2">Profielfoto URL (Optioneel)</label>
+                <input type="url" id="profilePictureUrl" name="profilePictureUrl"
+                       class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                       placeholder="https://voorbeeld.com/profielfoto.jpg">
+            </div>
+
+
+            <div class="flex items-center justify-between mb-6">
+                <button type="submit"
+                        class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                    Registreer
+                </button>
+            </div>
+
+            <p class="text-center text-gray-600 text-sm">
+                Al een account? <a href="login.html" class="text-orange-500 hover:text-orange-700 font-semibold">Log hier in</a>.
+            </p>
+        </form>
+        <!-- End Registration Form -->
+
+        <!-- Placeholder for Supabase/PHP registration logic -->
+        <div id="authMessage" class="mt-4 text-center"></div>
+    </div>
+
+    <script>
+        const registerForm = document.getElementById('registerForm');
+        const authMessage = document.getElementById('authMessage');
+        const submitButton = registerForm.querySelector('button[type="submit"]');
+
+        registerForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            submitButton.disabled = true;
+            submitButton.textContent = 'Registreren...';
+            authMessage.textContent = '';
+            authMessage.className = 'mt-4 text-center';
+
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const profilePictureUrl = document.getElementById('profilePictureUrl').value;
+
+            if (password !== confirmPassword) {
+                authMessage.textContent = 'Wachtwoorden komen niet overeen.';
+                authMessage.className += ' text-red-500';
+                submitButton.disabled = false;
+                submitButton.textContent = 'Registreer';
+                return;
+            }
+
+            if (!supabase) {
+                authMessage.textContent = 'Supabase client is niet beschikbaar. Controleer de console.';
+                authMessage.className += ' text-red-500';
+                submitButton.disabled = false;
+                submitButton.textContent = 'Registreer';
+                console.error('Supabase client niet gevonden in register.js');
+                return;
+            }
+
+            try {
+                // Optioneel: data meegeven die de trigger kan gebruiken voor de 'profiles' tabel
+                const userData = {
+                    full_name: name, // Key 'full_name' komt overeen met de trigger
+                    avatar_url: profilePictureUrl || null // Key 'avatar_url' komt overeen met de trigger
+                };
+
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: userData // Deze data wordt opgeslagen in auth.users.raw_user_meta_data
+                    }
+                });
+
+                if (error) {
+                    console.error('Supabase registratie fout:', error);
+                    authMessage.textContent = `Registratiefout: ${error.message}`;
+                    authMessage.className += ' text-red-500';
+                } else if (data.user && data.user.identities && data.user.identities.length === 0) {
+                    // Dit kan gebeuren als de gebruiker al bestaat maar nog niet bevestigd is (afhankelijk van je Supabase instellingen)
+                    authMessage.textContent = 'Dit e-mailadres is al geregistreerd maar nog niet bevestigd. Controleer je e-mail voor de bevestigingslink, of probeer in te loggen.';
+                    authMessage.className += ' text-orange-500';
+                } else if (data.user) {
+                    authMessage.textContent = 'Registratie succesvol! Controleer je e-mail voor de bevestigingslink.';
+                    authMessage.className += ' text-green-500';
+                    registerForm.reset(); // Reset het formulier na succes
+                     // Optioneel: doorsturen na x seconden
+                    // setTimeout(() => {
+                    //    window.location.href = 'login.html';
+                    // }, 5000);
+                } else {
+                     authMessage.textContent = 'Er is een onbekende fout opgetreden tijdens de registratie. Probeer het later opnieuw.';
+                     authMessage.className += ' text-red-500';
+                }
+
+            } catch (err) {
+                console.error('Onverwachte fout tijdens registratie:', err);
+                authMessage.textContent = 'Er is een onverwachte fout opgetreden. Probeer het later opnieuw.';
+                authMessage.className += ' text-red-500';
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Registreer';
+            }
+        });
+    </script>
+</body>
+</html>

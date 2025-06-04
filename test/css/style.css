@@ -1,0 +1,32 @@
+/* Custom Styles for SpotThatRide */
+
+/* Example: Customizing a Tailwind class or adding a new one */
+/*
+.btn-primary {
+    @apply bg-orange-500 text-white font-bold py-2 px-4 rounded;
+}
+
+.btn-primary:hover {
+    @apply bg-orange-700;
+}
+*/
+
+/* You can add more specific styles here as the project grows */
+
+body {
+    font-family: 'Inter', sans-serif; /* Example: Using a Google Font if you decide to add one */
+}
+
+/* Add a subtle animation to cards on hover */
+.spot-card:hover {
+    transform: translateY(-5px);
+    transition: transform 0.3s ease-in-out;
+}
+
+/* Styling for Leaflet map container if needed */
+#map {
+    height: 400px;
+    width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}

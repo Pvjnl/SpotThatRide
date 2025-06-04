@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpotThatRide - Deel je Autospots</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Jouw Supabase Client Configuratie -->
+    <script src="js/supabaseClient.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- Header -->
+    <header class="bg-white shadow-md">
+        <nav class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <a href="index.html" class="text-2xl font-bold text-orange-500">SpotThatRide</a>
+            <div>
+                <a href="profile.html" id="navUserProfile" class="px-3 py-2 text-gray-700 hover:text-orange-500 hidden">Mijn Profiel</a>
+                <a href="add-spot.html" id="navAddSpot" class="px-3 py-2 text-gray-700 hover:text-orange-500 hidden">Spot Toevoegen</a>
+                <a href="login.html" id="navLoginRegister" class="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600">Login/Register</a>
+                <button id="navLogoutButton" class="ml-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 hidden">Uitloggen</button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+        <!-- Introductie Sectie -->
+        <section id="intro" class="mb-12 text-center">
+            <h1 class="text-4xl font-bold mb-4">Welkom bij SpotThatRide!</h1>
+            <p class="text-lg text-gray-700">
+                SpotThatRide is dé community voor autoliefhebbers. Deel hier jouw gespotte droomauto's, ontdek unieke wagens
+                en kom in contact met andere spotters. Of je nu een zeldzame klassieker, een brullende supercar of een
+                perfect getunede wagen hebt gezien, jouw spot is hier welkom!
+            </p>
+        </section>
+
+        <!-- Recent Gespotte Auto's -->
+        <section id="spotsGrid">
+            <h2 class="text-3xl font-semibold mb-6 text-center">Recent Gespot</h2>
+            <!-- <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                Voorbeeld Spot Card (deze worden later dynamisch geladen)
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                    <img src="https://via.placeholder.com/400x250.png?text=Gespotted+Auto+1" alt="Gespotted Auto 1" class="w-full h-48 object-cover">
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold mb-2">Automodel 1</h3>
+                        <p class="text-gray-600 text-sm">Gezien op: 01-01-2025</p>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                    <img src="https://via.placeholder.com/400x250.png?text=Gespotted+Auto+2" alt="Gespotted Auto 2" class="w-full h-48 object-cover">
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold mb-2">Automodel 2</h3>
+                        <p class="text-gray-600 text-sm">Gezien op: 02-01-2025</p>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                    <img src="https://via.placeholder.com/400x250.png?text=Gespotted+Auto+3" alt="Gespotted Auto 3" class="w-full h-48 object-cover">
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold mb-2">Automodel 3</h3>
+                        <p class="text-gray-600 text-sm">Gezien op: 03-01-2025</p>
+                    </div>
+                </div>
+            </div> -->
+
+            <div id="index-spot-container" class="spot-preview-container"></div>
+
+
+
+        </section>
+            <div class="text-center mt-8">
+                <a href="spots.html" class="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition duration-300">Bekijk Alle Spots</a>
+            </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; <span id="currentYear"></span> SpotThatRide. Alle rechten voorbehouden.</p>
+            <p>Gemaakt met ❤️ door een enthousiaste developer!</p>
+        </div>
+    </footer>
+
+    <script src="js/script.js"></script>
+
+    <script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js'
+
+//   const supabase = createClient(
+//     'https://[PROJECT_ID].supabase.co',
+//     '[ANON_PUBLIC_API_KEY]'
+//   )
+
+  async function loadSpotPreviews() {
+    const { data: spots, error } = await supabase
+      .from('spots_with_details')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(3)
+
+    if (error) {
+      console.error('Error loading spots:', error)
+      return
+    }
+
+    const container = document.getElementById('spotsGrid')
+    spots.forEach(spot => {
+      const el = document.createElement('div')
+      el.classList.add('spot-preview')
+      el.innerHTML = `
+                    <div id="spotsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        <div class="spot-card bg-white rounded-lg shadow-lg overflow-hidden transition-transform duration-300 ease-in-out hover:shadow-xl">
+                            <a href="spot-detail.html?id=${spot.id}">
+                                <img src="${spot.afbeelding_url || 'https://via.placeholder.com/400x250.png?text=Geen+Afbeelding'}" alt="${spot.merk} ${spot.model}" class="w-full h-48 object-cover">
+                            </a>
+                            <div class="p-4">
+                                <h3 class="text-lg font-bold mb-1"><a href="spot-detail.html?id=${spot.id}" class="hover:text-orange-600">${spot.merk} ${spot.model}</a></h3>
+                                <p class="text-sm text-gray-600 mb-2">Gezien door: ${spot.spotter_naam ? spot.spotter_naam : 'Anoniem'}</p>
+                                <p class="text-xs text-gray-500">${new Date(spot.datum).toLocaleDateString('nl-NL', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                                <div class="flex items-center justify-between mt-3">
+                                    <span class="text-sm text-gray-700"><i class="fas fa-heart text-red-500"></i> ${spot.likes_count} Likes</span>
+                                    <a href="spot-detail.html?id=${spot.id}" class="text-xs bg-orange-500 text-white px-2 py-1 rounded hover:bg-orange-600">Details</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+      `
+      container.appendChild(el)
+    })
+  }
+
+  loadSpotPreviews()
+</script>
+
+</body>
+</html>

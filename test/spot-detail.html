@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- TODO: Title should be dynamic, e.g., "Ferrari F40 - SpotThatRide" -->
+    <title>Spot Details - SpotThatRide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Jouw Supabase Client Configuratie -->
+    <script src="js/supabaseClient.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- Header -->
+    <header class="bg-white shadow-md">
+        <nav class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <a href="index.html" class="text-2xl font-bold text-orange-500">SpotThatRide</a>
+            <div>
+                <a href="profile.html" id="navUserProfile" class="px-3 py-2 text-gray-700 hover:text-orange-500 hidden">Mijn Profiel</a>
+                <a href="add-spot.html" id="navAddSpot" class="px-3 py-2 text-gray-700 hover:text-orange-500 hidden">Spot Toevoegen</a>
+                <a href="login.html" id="navLoginRegister" class="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600">Login/Register</a>
+                <button id="navLogoutButton" class="ml-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 hidden">Uitloggen</button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+        <!-- Spot Details Section (Content will be loaded dynamically) -->
+        <article id="spotDetail" class="bg-white p-6 md:p-8 rounded-lg shadow-xl">
+            <!-- Large Afbeelding -->
+            <div class="mb-6">
+                <img id="spotImage" src="https://via.placeholder.com/800x500.png?text=Grote+Autofoto" alt="Gespotted Auto" class="w-full h-auto max-h-[70vh] object-contain rounded-lg shadow-md">
+            </div>
+
+            <!-- Spot Info -->
+            <div class="grid md:grid-cols-3 gap-6 mb-6">
+                <div class="md:col-span-2">
+                    <h1 id="spotTitle" class="text-3xl md:text-4xl font-bold text-orange-600 mb-2">Automodel Hier</h1>
+                    <p id="spotBrand" class="text-xl text-gray-700 mb-4">Merk: <span class="font-semibold">Automerk</span></p>
+                    <div class="mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-1">Omschrijving:</h3>
+                        <p id="spotDescription" class="text-gray-600 leading-relaxed">
+                            Dit is een placeholder omschrijving van de gespotte auto. Hier komt meer detail over de spot,
+                            zoals de staat van de auto, eventuele bijzonderheden, of het verhaal achter de spot.
+                        </p>
+                    </div>
+                    <p class="text-sm text-gray-500">Gepost op: <span id="spotDate" class="font-medium">01-01-2025</span> door <a href="#" id="spotUser" class="text-orange-500 hover:underline">SpotterNaam</a></p>
+                </div>
+                <div class="md:col-span-1">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Locatie:</h3>
+                    <div id="spotMap" class="h-64 w-full rounded border shadow-sm mb-2"></div>
+                    <p id="spotLocationText" class="text-sm text-gray-600">P.C. Hooftstraat, Amsterdam</p>
+                    <div class="mt-4">
+                        <button id="likeButton" class="w-full flex items-center justify-center px-4 py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition duration-150">
+                            <i class="fas fa-heart mr-2"></i> Like (<span id="likeCount">0</span>)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reacties Sectie -->
+            <section id="commentsSection" class="mt-10 pt-6 border-t border-gray-200">
+                <h2 class="text-2xl font-semibold mb-6 text-gray-800">Reacties (<span id="commentCount">0</span>)</h2>
+
+                <!-- Reactie Formulier (voor ingelogde gebruikers) -->
+                <form id="commentForm" class="mb-8">
+                    <textarea id="commentText" name="commentText" rows="3" required
+                              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-2"
+                              placeholder="Plaats een reactie..."></textarea>
+                    <button type="submit"
+                            class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                        Reactie Plaatsen
+                    </button>
+                </form>
+
+                <!-- Lijst van Reacties (wordt dynamisch geladen) -->
+                <div id="commentsList" class="space-y-4">
+                    <!-- Voorbeeld Reactie -->
+                    <!-- <div class="bg-gray-50 p-4 rounded-lg shadow">
+                        <p class="text-gray-700"><strong>Gebruiker123:</strong> Wat een geweldige spot! Echt een droomauto.</p>
+                        <p class="text-xs text-gray-500 mt-1">Geplaatst op: 02-01-2025</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg shadow">
+                        <p class="text-gray-700"><strong>Autofanatic:</strong> Prachtige kleur! Waar heb je deze precies gezien?</p>
+                        <p class="text-xs text-gray-500 mt-1">Geplaatst op: 03-01-2025</p>
+                    </div> -->
+                    <!-- Einde Voorbeeld Reactie -->
+                </div>
+            </section>
+        </article>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; <span id="currentYear"></span> SpotThatRide. Alle rechten voorbehouden.</p>
+        </div>
+    </footer>
+
+    <script src="js/script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const currentYearSpan = document.getElementById('currentYear');
+            if (currentYearSpan) {
+                currentYearSpan.textContent = new Date().getFullYear();
+            }
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const spotId = urlParams.get('id');
+
+            const spotImageElem = document.getElementById('spotImage');
+            const spotTitleElem = document.getElementById('spotTitle');
+            const spotBrandElem = document.getElementById('spotBrand');
+            const spotDescriptionElem = document.getElementById('spotDescription');
+            const spotDateElem = document.getElementById('spotDate');
+            const spotUserElem = document.getElementById('spotUser');
+            const spotLocationTextElem = document.getElementById('spotLocationText');
+            const likeButton = document.getElementById('likeButton');
+            const likeCountElem = document.getElementById('likeCount');
+            const commentsListElem = document.getElementById('commentsList');
+            const commentCountElem = document.getElementById('commentCount');
+            const commentForm = document.getElementById('commentForm');
+            const commentTextElem = document.getElementById('commentText');
+            const spotDetailArticle = document.getElementById('spotDetail');
+            let spotMap; // Leaflet map instance
+
+            if (!spotId) {
+                spotDetailArticle.innerHTML = '<p class="text-center text-red-500 text-xl py-10">Spot ID niet gevonden in URL.</p>';
+                return;
+            }
+            if (!supabase) {
+                 spotDetailArticle.innerHTML = '<p class="text-center text-red-500 text-xl py-10">Supabase client niet geladen.</p>';
+                return;
+            }
+
+            let currentSpotData = null;
+            let currentUser = await getCurrentUser(); // Functie uit script.js
+
+            /**
+             * Haalt de details van één specifieke spot op.
+             */
+            async function fetchSpotDetails() {
+            const { data: spot, error } = await supabase
+                .from('spots_with_details') // Gebruik de VIEW die we hebben gemaakt
+                .select('*') // Expliciet user_id
+                .eq('id', spotId)
+                .single();
+
+            // Binnen fetchSpotDetails, na het ophalen van de spot:
+            if (spot && spot.user_id) {                                                                                                                                                             
+                const { data: profileData, error: profileError } = await supabase
+                    .from('profiles')
+                    .select('naam, profielfoto_url')
+                    .eq('id', spot.user_id) // Gebruik de user_id van de spot
+                    .single();
+                if (profileError) console.error("Fout bij apart ophalen profiel:", profileError);
+                else console.log("Apart opgehaald profiel:", profileData);
+            }               
+
+
+
+
+                if (error) {
+                    console.error('Fout bij ophalen spot details:', error);
+                    spotDetailArticle.innerHTML = `<p class="text-center text-red-500 text-xl py-10">Fout bij laden van spot: ${error.message}</p>`;
+                    return null;
+                }
+                if (!spot) {
+                     spotDetailArticle.innerHTML = '<p class="text-center text-gray-600 text-xl py-10">Spot niet gevonden.</p>';
+                    return null;
+                }
+                return spot;
+            }
+
+            /* Haalt reacties voor de huidige spot op. */
+            async function fetchComments() {
+                // Query nu de VIEW 'reacties_with_details'
+                const { data: comments, error } = await supabase
+                    .from('reacties_with_details') // Gebruik de view naam
+                    .select('*') // Selecteer alle kolommen uit de view
+                    .eq('spot_id', spotId) // Filter op spot_id (deze kolom zit in de view)
+                    .order('datum', { ascending: true }); // 'datum' is ook in de view
+
+                if (error) {
+                    console.error('Fout bij ophalen reacties via view:', error);
+                    return [];
+                }
+                // De data bevat nu direct 'reageerder_naam' en 'reageerder_profielfoto_url'
+                return comments || [];
+                const newComments = await fetchComments();
+                console.log('Opgehaalde reacties:', newComments); // <--- voeg deze regel toe
+                renderComments(newComments);
+
+            }
+
+
+            /**
+             * Rendert de spot details op de pagina.
+             */
+            function renderSpotDetails(spot) {
+                currentSpotData = spot;
+                document.title = `${spot.merk} ${spot.model} - SpotThatRide`;
+                spotImageElem.src = spot.afbeelding_url || 'https://via.placeholder.com/800x500.png?text=Geen+Afbeelding';
+                spotImageElem.alt = `${spot.merk} ${spot.model}`;
+                spotTitleElem.textContent = `${spot.merk} ${spot.model}`;
+                spotBrandElem.innerHTML = `Merk: <span class="font-semibold">${spot.merk}</span>`;
+                spotDescriptionElem.textContent = spot.beschrijving || 'Geen omschrijving beschikbaar.';
+                spotDateElem.textContent = new Date(spot.datum).toLocaleDateString('nl-NL', { year: 'numeric', month: 'long', day: 'numeric' });
+                spotUserElem.textContent = spot.spotter_naam || 'Anonieme Spotter';
+                spotUserElem.href = `profile.html?id=${spot.user_id}`; // Link naar profielpagina
+                
+
+                // Kaart initialiseren (als deze nog niet bestaat)
+                if (spot.locatie_lat && spot.locatie_lng) {
+                    spotLocationTextElem.textContent = `Locatie: Lat: ${spot.locatie_lat.toFixed(4)}, Lng: ${spot.locatie_lng.toFixed(4)}`; // Placeholder
+                    if (!spotMap) {
+                        spotMap = L.map('spotMap').setView([spot.locatie_lat, spot.locatie_lng], 15);
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        }).addTo(spotMap);
+                    } else {
+                        spotMap.setView([spot.locatie_lat, spot.locatie_lng], 15);
+                    }
+                    L.marker([spot.locatie_lat, spot.locatie_lng]).addTo(spotMap)
+                        .bindPopup(`${spot.merk} ${spot.model}`)
+                        .openPopup();
+                } else {
+                    document.getElementById('spotMap').innerHTML = '<p class="text-sm text-gray-500 p-4 text-center">Locatie niet beschikbaar.</p>';
+                    spotLocationTextElem.textContent = 'Locatie niet gespecificeerd.';
+                }
+                updateLikeButtonState();
+            }
+
+            /**
+             * Rendert de reacties.
+             */
+            function renderComments(comments) {
+                commentsListElem.innerHTML = '';
+                commentCountElem.textContent = comments.length;
+                if (comments.length > 0) {
+                    comments.forEach(comment => {
+                        const commentDiv = document.createElement('div');
+                        commentDiv.className = 'bg-gray-50 p-4 rounded-lg shadow flex items-start space-x-3';
+                        
+                        let profileImageHTML = '';
+                        if (comment.reageerder_profielfoto_url) {
+                            profileImageHTML = `<img src="${comment.reageerder_profielfoto_url}" alt="${comment.reageerder_naam || 'Profielfoto'}" class="w-10 h-10 rounded-full object-cover">`;
+                        } else {
+                            profileImageHTML = `<div class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-white text-xl font-bold">${(comment.reageerder_naam || 'A').charAt(0).toUpperCase()}</div>`;
+                        }
+
+                        commentDiv.innerHTML = `
+                            ${profileImageHTML}
+                            <div>
+                                <p class="text-gray-800"><strong>${comment.reageerder_naam || 'Anoniem'}:</strong> ${comment.tekst}</p>
+                                <p class="text-xs text-gray-500 mt-1">Geplaatst op: ${new Date(comment.datum).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                            </div>
+                        `;
+                        commentsListElem.appendChild(commentDiv);
+                    });
+                } else {
+                    commentsListElem.innerHTML = '<p class="text-gray-600">Nog geen reacties. Wees de eerste!</p>';
+                }
+            }
+
+            /**
+             * Update de like knop status en het aantal likes.
+             */
+            async function updateLikeButtonState() {
+                if (!currentSpotData) return;
+
+                // Haal actuele like count op
+                const { count, error: countError } = await supabase
+                    .from('likes')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('spot_id', currentSpotData.id);
+
+                if (countError) console.error("Fout bij tellen likes:", countError);
+                
+                const totalLikes = count || 0;
+                likeCountElem.textContent = totalLikes;
+
+                if (currentUser) {
+                    const { data: userLike, error: likeCheckError } = await supabase
+                        .from('likes')
+                        .select('id')
+                        .eq('spot_id', currentSpotData.id)
+                        .eq('user_id', currentUser.id)
+                        .maybeSingle(); // .maybeSingle() omdat de like wel of niet kan bestaan
+
+                    if (likeCheckError) console.error("Fout bij controleren like:", likeCheckError);
+
+                    if (userLike) { // Gebruiker heeft deze spot geliked
+                        likeButton.classList.remove('text-red-500', 'border-red-500');
+                        likeButton.classList.add('bg-red-500', 'text-white');
+                        likeButton.innerHTML = `<i class="fas fa-heart mr-2"></i> Geliked (<span id="likeCount">${totalLikes}</span>)`;
+                    } else { // Gebruiker heeft nog niet geliked
+                        likeButton.classList.add('text-red-500', 'border-red-500');
+                        likeButton.classList.remove('bg-red-500', 'text-white');
+                        likeButton.innerHTML = `<i class="far fa-heart mr-2"></i> Like (<span id="likeCount">${totalLikes}</span>)`;
+                    }
+                    likeButton.disabled = false;
+                } else { // Gebruiker niet ingelogd
+                    likeButton.innerHTML = `<i class="far fa-heart mr-2"></i> Like (<span id="likeCount">${totalLikes}</span>)`;
+                    likeButton.disabled = true; // Of stuur naar login
+                }
+            }
+
+
+            /**
+             * Like/Unlike een spot.
+             */
+            likeButton.addEventListener('click', async () => {
+                if (!currentUser) {
+                    alert('Je moet ingelogd zijn om te kunnen liken.');
+                    window.location.href = `login.html?redirect=spot-detail.html?id=${spotId}`;
+                    return;
+                }
+                if (!currentSpotData) return;
+
+                likeButton.disabled = true;
+
+                // Controleer of de gebruiker al geliked heeft
+                const { data: existingLike, error: checkError } = await supabase
+                    .from('likes')
+                    .select('id')
+                    .eq('spot_id', currentSpotData.id)
+                    .eq('user_id', currentUser.id)
+                    .maybeSingle();
+
+                if (checkError) {
+                    console.error("Fout bij controleren bestaande like:", checkError);
+                    alert("Er is een fout opgetreden.");
+                    likeButton.disabled = false;
+                    return;
+                }
+
+                if (existingLike) { // Al geliked, dus unlike
+                    const { error: deleteError } = await supabase
+                        .from('likes')
+                        .delete()
+                        .eq('id', existingLike.id);
+                    if (deleteError) {
+                        console.error("Fout bij unliken:", deleteError);
+                        alert(`Unliken mislukt: ${deleteError.message}`);
+                    }
+                } else { // Nog niet geliked, dus like
+                    const { error: insertError } = await supabase
+                        .from('likes')
+                        .insert({ spot_id: currentSpotData.id, user_id: currentUser.id });
+                    if (insertError) {
+                        console.error("Fout bij liken:", insertError);
+                        alert(`Liken mislukt: ${insertError.message}`);
+                    }
+                }
+                await updateLikeButtonState(); // Update UI
+                likeButton.disabled = false;
+            });
+
+            /**
+             * Plaatst een nieuwe reactie.
+             */
+            commentForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!currentUser) {
+                    alert('Je moet ingelogd zijn om een reactie te plaatsen.');
+                     window.location.href = `login.html?redirect=spot-detail.html?id=${spotId}`;
+                    return;
+                }
+                const commentText = commentTextElem.value.trim();
+                if (!commentText) {
+                    alert('Reactie mag niet leeg zijn.');
+                    return;
+                }
+
+                const submitButton = commentForm.querySelector('button[type="submit"]');
+                submitButton.disabled = true;
+                submitButton.textContent = 'Plaatsen...';
+
+                const { data, error } = await supabase
+                    .from('reacties')
+                    .insert({
+                        spot_id: spotId,
+                        user_id: currentUser.id,
+                        tekst: commentText
+                    })
+                    .select(); // Om de nieuwe comment terug te krijgen (optioneel)
+
+                if (error) {
+                    console.error('Fout bij plaatsen reactie:', error);
+                    alert(`Reactie plaatsen mislukt: ${error.message}`);
+                } else {
+                    commentTextElem.value = ''; // Maak textarea leeg
+                    // Voeg nieuwe comment direct toe aan de lijst of laad alle comments opnieuw
+                    const newComments = await fetchComments();
+                    renderComments(newComments);
+                }
+                submitButton.disabled = false;
+                submitButton.textContent = 'Reactie Plaatsen';
+            });
+
+
+            // Initieel laden van data
+            const spotData = await fetchSpotDetails();
+            if (spotData) {
+                renderSpotDetails(spotData);
+                const commentsData = await fetchComments();
+                renderComments(commentsData);
+            }
+
+            // Verberg commentaarformulier als niet ingelogd
+            if (!currentUser) {
+                commentForm.classList.add('hidden');
+                const p = document.createElement('p');
+                p.innerHTML = `Je moet <a href="login.html?redirect=spot-detail.html?id=${spotId}" class="text-orange-500 hover:underline">ingelogd</a> zijn om een reactie te plaatsen.`;
+                commentsListElem.parentNode.insertBefore(p, commentsListElem);
+            }
+        });
+    </script>
+</body>
+</html>
