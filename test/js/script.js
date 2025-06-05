@@ -54,6 +54,7 @@ async function handleLogout() {
  */
 function updateUserNav(user) {
     const navLoginRegister = document.getElementById('navLoginRegister'); // ID voor Login/Register link/knop
+    const navSpots = document.getElementById('navSpots');     // ID voor Mijn Profiel link
     const navUserProfile = document.getElementById('navUserProfile');     // ID voor Mijn Profiel link
     const navAddSpot = document.getElementById('navAddSpot');         // ID voor Spot Toevoegen link
     const navLogoutButton = document.getElementById('navLogoutButton');   // ID voor Uitloggen knop
@@ -66,6 +67,7 @@ function updateUserNav(user) {
 
     if (user) { // Gebruiker is ingelogd
         if (navLoginRegister) navLoginRegister.classList.add('hidden');
+        if (navSpots) navSpots.classList.remove('hidden');
         if (navUserProfile) navUserProfile.classList.remove('hidden');
         if (navAddSpot) navAddSpot.classList.remove('hidden');
         if (navLogoutButton) {
@@ -77,6 +79,7 @@ function updateUserNav(user) {
         }
     } else { // Gebruiker is niet ingelogd
         if (navLoginRegister) navLoginRegister.classList.remove('hidden');
+        if (navSpots) navSpots.classList.add('hidden');
         if (navUserProfile) navUserProfile.classList.add('hidden');
         if (navAddSpot) navAddSpot.classList.add('hidden');
         if (navLogoutButton) navLogoutButton.classList.add('hidden');
