@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Spot Bewerken - SpotThatRide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabaseClient.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+  <!-- Header -->
+  <header class="bg-white shadow-md">
+    <nav
+      class="container mx-auto px-6 py-3 flex justify-between items-center"
+    >
+      <a href="index.html" class="text-2xl font-bold text-orange-500"
+        >SpotThatRide</a
+      >
+      <div>
+        <a
+          href="spots.html"
+          id="navSpots"
+          class="px-3 py-2 text-gray-700 hover:text-orange-500"
+          >Alle Spots</a
+        >
+        <a
+          href="profile.html"
+          id="navUserProfile"
+          class="px-3 py-2 text-gray-700 hover:text-orange-500"
+          >Mijn Profiel</a
+        >
+        <a
+          href="add-spot.html"
+          id="navAddSpot"
+          class="px-3 py-2 text-gray-700 hover:text-orange-500"
+          >Spot Toevoegen</a
+        >
+        <a
+          href="login.html"
+          id="navLoginRegister"
+          class="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 hidden"
+          >Login/Register</a
+        >
+        <button
+          id="navLogoutButton"
+          class="ml-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+        >
+          Uitloggen
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container mx-auto px-6 py-8">
+    <h1 class="text-3xl font-bold mb-8 text-center">Spot Bewerken</h1>
+
+    <form id="editSpotForm" class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-xl" enctype="multipart/form-data">
+      <!-- Foto Upload -->
+      <div class="mb-6">
+        <label
+          for="spotImage"
+          class="block text-gray-700 text-sm font-bold mb-2"
+          >Autofoto</label
+        >
+        <input
+          type="file"
+          id="spotImage"
+          name="spotImage"
+          accept="image/*"
+          class="block w-full text-sm text-gray-500
+                              file:mr-4 file:py-2 file:px-4
+                              file:rounded-full file:border-0
+                              file:text-sm file:font-semibold
+                              file:bg-orange-50 file:text-orange-700
+                              hover:file:bg-orange-100
+                       "
+        />
+        <img
+          id="imagePreview"
+          src="#"
+          alt="Image Preview"
+          class="mt-4 rounded-lg max-h-64 hidden"
+        />
+      </div>
+
+      <!-- Merk -->
+      <div class="mb-4">
+        <label
+          for="carBrand"
+          class="block text-gray-700 text-sm font-bold mb-2"
+          >Merk</label
+        >
+        <input
+          type="text"
+          id="carBrand"
+          name="carBrand"
+          required
+          class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          placeholder="Bijv. Ferrari"
+        />
+      </div>
+
+      <!-- Model -->
+      <div class="mb-4">
+        <label
+          for="carModel"
+          class="block text-gray-700 text-sm font-bold mb-2"
+          >Model</label
+        >
+        <input
+          type="text"
+          id="carModel"
+          name="carModel"
+          required
+          class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          placeholder="Bijv. F8 Tributo"
+        />
+      </div>
+
+      <!-- Omschrijving -->
+      <div class="mb-4">
+        <label
+          for="description"
+          class="block text-gray-700 text-sm font-bold mb-2"
+          >Omschrijving (optioneel)</label
+        >
+        <textarea
+          id="description"
+          name="description"
+          rows="4"
+          class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          placeholder="Vertel iets over je spot..."
+        ></textarea>
+      </div>
+
+      <!-- Locatie -->
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold mb-2 text-gray-700">Locatie</h3>
+        <div class="mb-2">
+          <button
+            type="button"
+            id="useGPS"
+            class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mr-2"
+          >
+            Gebruik Huidige Locatie (GPS)
+          </button>
+          <span class="text-sm text-gray-600">Of voer handmatig in:</span>
+        </div>
+        <div id="map" class="h-64 w-full rounded border mb-2"></div>
+        <input
+          type="text"
+          id="manualLocation"
+          name="manualLocation"
+          class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-2"
+          placeholder="Bijv. P.C. Hooftstraat, Amsterdam"
+        />
+        <input type="hidden" id="locationLat" name="locationLat" />
+        <input type="hidden" id="locationLng" name="locationLng" />
+      </div>
+
+      <div class="flex items-center justify-center">
+        <button
+          type="submit"
+          class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-lg focus:outline-none focus:shadow-outline text-lg">
+          Spot Bewerken
+        </button>
+      </div>
+    </form>
+    <div id="formMessage" class="mt-4 text-center"></div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 text-white py-8 mt-12">
+    <div class="container mx-auto px-6 text-center">
+      <p>&copy; <span id="currentYear"></span> SpotThatRide. Alle rechten voorbehouden.</p>
+    </div>
+  </footer>
+
+  <script src="js/script.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      // Jaar invullen
+      const currentYearSpan = document.getElementById("currentYear");
+      if (currentYearSpan) {
+        currentYearSpan.textContent = new Date().getFullYear();
+      }
+
+      // Functie image preview
+      const spotImageInput = document.getElementById("spotImage");
+      const imagePreview = document.getElementById("imagePreview");
+      spotImageInput.addEventListener("change", function (event) {
+        if (event.target.files && event.target.files[0]) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            imagePreview.src = e.target.result;
+            imagePreview.classList.remove("hidden");
+          };
+          reader.readAsDataURL(event.target.files[0]);
+        } else {
+          imagePreview.src = "#";
+          imagePreview.classList.add("hidden");
+        }
+      });
+
+      // Leaflet Map Initialization
+      const map = L.map("map").setView([52.3676, 4.9041], 13); // Default: Amsterdam
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "© OpenStreetMap",
+      }).addTo(map);
+
+      let marker = null;
+
+      function setMarker(lat, lng) {
+        if (marker) {
+          marker.setLatLng([lat, lng]);
+        } else {
+          marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+          marker.on("dragend", () => {
+            const pos = marker.getLatLng();
+            document.getElementById("locationLat").value = pos.lat;
+            document.getElementById("locationLng").value = pos.lng;
+          });
+        }
+        document.getElementById("locationLat").value = lat;
+        document.getElementById("locationLng").value = lng;
+        map.setView([lat, lng], 16);
+      }
+
+      // GPS knop
+      document.getElementById("useGPS").addEventListener("click", () => {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              const lat = pos.coords.latitude;
+              const lng = pos.coords.longitude;
+              setMarker(lat, lng);
+            },
+            (err) => {
+              alert("Kon locatie niet ophalen: " + err.message);
+            }
+          );
+        } else {
+          alert("Geolocatie wordt niet ondersteund door je browser.");
+        }
+      });
+
+      // Spot ID uit URL halen
+      const params = new URLSearchParams(window.location.search);
+      const spotId = params.get("id");
+
+      if (!spotId) {
+        alert("Geen spot ID opgegeven in de URL.");
+        return;
+      }
+
+      // Supabase client
+      const supabase = window.supabase;
+
+      // Spot gegevens ophalen
+      const { data: spotData, error } = await supabase
+        .from("spots")
+        .select("*")
+        .eq("id", spotId)
+        .single();
+
+      if (error || !spotData) {
+        alert("Kon spot niet laden: " + (error ? error.message : "Geen data"));
+        return;
+      }
+
+      // Gegevens invullen
+      document.getElementById("carBrand").value = spotData.brand || "";
+      document.getElementById("carModel").value = spotData.model || "";
+      document.getElementById("description").value = spotData.description || "";
+      if (spotData.image_url) {
+        imagePreview.src = spotData.image_url;
+        imagePreview.classList.remove("hidden");
+      }
+
+      if (spotData.latitude && spotData.longitude) {
+        setMarker(spotData.latitude, spotData.longitude);
+      }
+
+      // Form submit handler
+      document.getElementById("editSpotForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const brand = document.getElementById("carBrand").value.trim();
+        const model = document.getElementById("carModel").value.trim();
+        const description = document.getElementById("description").value.trim();
+        const lat = parseFloat(document.getElementById("locationLat").value);
+        const lng = parseFloat(document.getElementById("locationLng").value);
+
+        if (!brand || !model || isNaN(lat) || isNaN(lng)) {
+          alert("Vul alle verplichte velden correct in.");
+          return;
+        }
+
+        const fileInput = document.getElementById("spotImage");
+        let imageUrl = spotData.image_url; // behoud oude url standaard
+
+        // Nieuwe foto uploaden als die is gekozen
+        if (fileInput.files.length > 0) {
+          const file = fileInput.files[0];
+          const fileExt = file.name.split('.').pop();
+          const fileName = `spots/${spotId}.${fileExt}`;
+          const { data, error: uploadError } = await supabase.storage
+            .from("spot-images")
+            .upload(fileName, file, { upsert: true });
+
+          if (uploadError) {
+            alert("Fout bij uploaden afbeelding: " + uploadError.message);
+            return;
+          }
+          // publieke url ophalen
+          const { data: publicUrlData } = supabase.storage
+            .from("spot-images")
+            .getPublicUrl(fileName);
+          imageUrl = publicUrlData.publicUrl;
+        }
+
+        // Update spot in database
+        const { error: updateError } = await supabase
+          .from("spots")
+          .update({
+            brand,
+            model,
+            description,
+            latitude: lat,
+            longitude: lng,
+            image_url: imageUrl,
+          })
+          .eq("id", spotId);
+
+        if (updateError) {
+          alert("Fout bij updaten spot: " + updateError.message);
+          return;
+        }
+
+        // Succes bericht of redirect
+        const messageBox = document.getElementById("formMessage");
+        messageBox.textContent = "Spot succesvol bijgewerkt!";
+        messageBox.classList.add("text-green-600");
+
+        // Optioneel: redirect na 2 sec naar detail- of spots-pagina
+        setTimeout(() => {
+          window.location.href = `spot-detail.html?id=${spotId}`;
+        }, 2000);
+      });
+    });
+  </script>
+</body>
+</html>

@@ -21,7 +21,7 @@
             <a href="index.html" class="text-2xl font-bold text-orange-500">SpotThatRide</a>
             <div>
                 <a href="spots.html" id="navSpots" class="px-3 py-2 text-gray-700 hover:text-orange-500">Alle Spots</a>
-                <a href="profile.html" id="navUserProfile" class="px-3 py-2 text-orange-500 font-semibold">Mijn Profiel</a>
+                <a href="profile.html" id="navUserProfile" class="px-3 py-2 text-gray-700 hover:text-orange-500">Mijn Profiel</a>
                 <a href="add-spot.html" id="navAddSpot" class="px-3 py-2 text-gray-700 hover:text-orange-500">Spot Toevoegen</a>
                 <a href="login.html" id="navLoginRegister" class="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 hidden">Login/Register</a>
                 <button id="navLogoutButton" class="ml-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Uitloggen</button>
@@ -53,22 +53,17 @@
                             <p class="text-sm">Reacties Ontvangen</p>
                         </div>
                     </div>
-                    <div class="mt-6">
-                        <button id="editProfileButton" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center">
-                            <i class="fas fa-edit mr-2"></i> Profiel Bewerken
-                        </button>
-                    </div>
                 </div>
             </div>
         </section>
 
         <!-- User's Spots Section -->
         <section id="userSpots">
-            <h2 class="text-2xl font-semibold mb-6 text-gray-800">Mijn Gespotte Auto's</h2>
+            <h2 id="userSpotsTitle" class="text-2xl font-semibold mb-6 text-gray-800">Mijn Gespotte Auto's</h2>
             <div id="userSpotsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <!-- Spot cards worden hier dynamisch geladen -->
                 <!-- Voorbeeld Spot Card van gebruiker -->
-                <div class="spot-card bg-white rounded-lg shadow-lg overflow-hidden">
+                <!-- <div class="spot-card bg-white rounded-lg shadow-lg overflow-hidden">
                     <a href="spot-detail.html?id=userspot1">
                         <img src="https://via.placeholder.com/400x250.png?text=Mijn+Spot+1" alt="Mijn Spot 1" class="w-full h-48 object-cover">
                     </a>
@@ -84,7 +79,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> -->
                 <!-- Einde Voorbeeld -->
             </div>
             <div id="noUserSpotsMessage" class="text-center py-10 text-gray-600 hidden">
@@ -115,8 +110,6 @@
             const userEmailElem = document.getElementById('userEmail');
             const memberSinceElem = document.getElementById('memberSince');
             const totalSpotsElem = document.getElementById('totalSpots');
-            const totalLikesReceivedElem = document.getElementById('totalLikesReceived'); // Voor later
-            const totalCommentsReceivedElem = document.getElementById('totalCommentsReceived'); // Voor later
             const editProfileButton = document.getElementById('editProfileButton');
 
             // Elementen voor spots van gebruiker
@@ -155,6 +148,8 @@
                     console.error("Fout bij ophalen gebruikersprofiel:", error);
                     return null;
                 }
+
+                document.getElementById('userSpotsTitle').textContent = `${profile.naam}’s Gespotte Auto’s`;
 
                 return profile;
             }
@@ -199,7 +194,6 @@
                 userSpotsContainer.innerHTML = ''; // Leegmaken
                 let totaalReacties = 0;
 
-
                 if (spots.length === 0) {
                     noUserSpotsMessage.classList.remove('hidden');
                 } else {
@@ -220,10 +214,6 @@
                                     <div class="flex items-center justify-between mt-3">
                                         <span class="text-sm text-gray-700"><i class="fas fa-heart text-red-500"></i> ${likesCount} Likes</span>
                                         <span class="text-sm text-gray-700"><i class="fas fa-comments text-blue-500"></i> ${reactiesCount} Reacties</span>
-                                        <div>
-                                            <a href="edit-spot.html?id=${spot.id}" class="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 mr-1" title="Bewerk spot"><i class="fas fa-pencil-alt"></i></a>
-                                            <button data-spot-id="${spot.id}" class="deleteSpotButton text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600" title="Verwijder spot"><i class="fas fa-trash"></i></button>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
