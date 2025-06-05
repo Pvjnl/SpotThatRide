@@ -16,17 +16,33 @@
 
     <!-- Header -->
     <header class="bg-white shadow-md">
-        <nav class="container mx-auto px-6 py-3 flex justify-between items-center">
+        <nav class="container mx-auto px-6 py-3 flex justify-between items-center relative">
             <a href="index.html" class="text-2xl font-bold text-orange-500">SpotThatRide</a>
-            <div>
+
+            <!-- Hamburger knop -->
+            <button id="menu-toggle" class="lg:hidden text-gray-700 focus:outline-none">
+                <i class="fas fa-bars text-2xl"></i>
+            </button>
+
+            <!-- Menu -->
+            <div id="menu" class="hidden absolute top-full left-0 w-full bg-white shadow-md z-10 flex flex-col px-6 py-4 lg:static lg:flex lg:flex-row lg:items-center lg:space-x-4 lg:shadow-none lg:w-auto">
                 <a href="spots.html" id="navSpots" class="px-3 py-2 text-orange-500 font-semibold">Alle Spots</a>
-                <a href="profile.html" id="navUserProfile" class="px-3 py-2 text-gray-700 hover:text-orange-500 hidden">Mijn Profiel</a>
-                <a href="add-spot.html" id="navAddSpot" class="px-3 py-2 text-gray-700 hover:text-orange-500 hidden">Spot Toevoegen</a>
-                <a href="login.html" id="navLoginRegister" class="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600">Login/Register</a>
-                <button id="navLogoutButton" class="ml-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 hidden">Uitloggen</button>
+                <a href="profile.html" id="navUserProfile" class="block px-3 py-2 text-gray-700 hover:text-orange-500 hidden">Mijn Profiel</a>
+                <a href="add-spot.html" id="navAddSpot" class="block px-3 py-2 text-gray-700 hover:text-orange-500 hidden">Spot Toevoegen</a>
+                <a href="login.html" id="navLoginRegister" class="block px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600">Login/Register</a>
+                <button id="navLogoutButton" class="block ml-0 mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 hidden lg:mt-0 lg:ml-2">Uitloggen</button>
             </div>
         </nav>
     </header>
+
+    <script>
+        const toggleButton = document.getElementById('menu-toggle');
+        const menu = document.getElementById('menu');
+
+        toggleButton.addEventListener('click', () => {
+            menu.classList.toggle('hidden');
+        });
+    </script>
 
     <!-- Main Content -->
     <main class="container mx-auto px-6 py-8">
