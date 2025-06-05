@@ -194,10 +194,6 @@
                 }
                 // De data bevat nu direct 'reageerder_naam' en 'reageerder_profielfoto_url'
                 return comments || [];
-                const newComments = await fetchComments();
-                console.log('Opgehaalde reacties:', newComments); // <--- voeg deze regel toe
-                renderComments(newComments);
-
             }
 
 
@@ -251,15 +247,15 @@
                         
                         let profileImageHTML = '';
                         if (comment.reageerder_profielfoto_url) {
-                            profileImageHTML = `<img src="${comment.reageerder_profielfoto_url}" alt="${comment.reageerder_naam || 'Profielfoto'}" class="w-10 h-10 rounded-full object-cover">`;
+                            profileImageHTML = `<img src="${comment.spotter_profielfoto_url}" alt="${comment.spotter_naam || 'Profielfoto'}" class="w-10 h-10 rounded-full object-cover">`;
                         } else {
-                            profileImageHTML = `<div class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-white text-xl font-bold">${(comment.reageerder_naam || 'A').charAt(0).toUpperCase()}</div>`;
+                            profileImageHTML = `<div class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-white text-xl font-bold">${(comment.spotter_naam || 'A').charAt(0).toUpperCase()}</div>`;
                         }
 
                         commentDiv.innerHTML = `
                             ${profileImageHTML}
                             <div>
-                                <p class="text-gray-800"><strong>${comment.reageerder_naam || 'Anoniem'}:</strong> ${comment.tekst}</p>
+                                <p class="text-gray-800"><strong>${comment.spotter_naam || 'Anoniem'}:</strong> ${comment.tekst}</p>
                                 <p class="text-xs text-gray-500 mt-1">Geplaatst op: ${new Date(comment.datum).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                             </div>
                         `;
