@@ -49,12 +49,68 @@
                        placeholder="********">
             </div>
 
-             <div class="mb-4">
+             <!-- <div class="mb-4">
                 <label for="profilePictureUrl" class="block text-gray-700 text-sm font-bold mb-2">Profielfoto URL (Optioneel)</label>
                 <input type="url" id="profilePictureUrl" name="profilePictureUrl"
                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                        placeholder="https://voorbeeld.com/profielfoto.jpg">
+            </div> -->
+<!-- 
+            <div class="mb-4">
+                <label for="profilePicture" class="block text-gray-700 text-sm font-bold mb-2">Profielfoto (optioneel)</label>
+                <input type="file" id="profilePicture" name="profilePicture"
+                        accept="image/*"
+                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div> -->
+
+            <!-- <div class="mb-6">
+                <label for="profilePicture" class="block text-gray-700 text-sm font-bold mb-2">Autofoto</label>
+                <input type="file" id="profilePicture" name="profilePicture" accept="image/*" 
+                       class="block w-full text-sm text-gray-500
+                              file:mr-4 file:py-2 file:px-4
+                              file:rounded-full file:border-0
+                              file:text-sm file:font-semibold
+                              file:bg-orange-50 file:text-orange-700
+                              hover:file:bg-orange-100
+                       "/>
+                <img id="imagePreview" src="#" alt="Image Preview" class="mt-4 rounded-lg max-h-64 hidden"/>
+            </div> -->
+
+            <div class="mb-6">
+                <label for="profilePicture" class="block text-gray-700 text-sm font-bold mb-2">Profielfoto</label>
+                <input type="file" id="profilePicture" name="profilePicture" accept="image/*" 
+                    class="block w-full text-sm text-gray-500
+                            file:mr-4 file:py-2 file:px-4
+                            file:rounded-full file:border-0
+                            file:text-sm file:font-semibold
+                            file:bg-orange-50 file:text-orange-700
+                            hover:file:bg-orange-100" />
+                
+                <img id="profielfotoPreview" src="#" alt="Preview" 
+                    class="mt-4 rounded-lg max-h-64 hidden" />
             </div>
+
+    <script>
+        const profielfotoInput = document.getElementById('profilePicture');
+        const profielfotoPreview = document.getElementById('profielfotoPreview');
+
+        profielfotoInput.addEventListener('change', function () {
+            const file = this.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    profielfotoPreview.src = e.target.result;
+                    profielfotoPreview.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                profielfotoPreview.src = '#';
+                profielfotoPreview.classList.add('hidden');
+            }
+        });
+    </script>
+
+
 
 
             <div class="flex items-center justify-between mb-6">
@@ -90,7 +146,38 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
-            const profilePictureUrl = document.getElementById('profilePictureUrl').value;
+            const profilePictureInput = document.getElementById('profilePicture');
+            let uploadedImageUrl = null;
+
+            if (profilePictureInput.files.length > 0) {
+                const file = profilePictureInput.files[0];
+                const fileExt = file.name.split('.').pop();
+                const filePath = `profile-pictures/${crypto.randomUUID()}.${fileExt}`;
+
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('profile-pictures')
+                    .upload(filePath, file, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+
+                if (uploadError) {
+                    console.error('Upload fout:', uploadError);
+                    authMessage.textContent = `Upload mislukt: ${uploadError.message}`;
+                    authMessage.className += ' text-red-500';
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Registreer';
+                    return;
+                }
+
+                // Maak de publieke URL
+                const { data: publicUrlData } = supabase
+                    .storage
+                    .from('profile-pictures')
+                    .getPublicUrl(filePath);
+
+                uploadedImageUrl = publicUrlData.publicUrl;
+            }
 
             if (password !== confirmPassword) {
                 authMessage.textContent = 'Wachtwoorden komen niet overeen.';
@@ -113,7 +200,7 @@
                 // Optioneel: data meegeven die de trigger kan gebruiken voor de 'profiles' tabel
                 const userData = {
                     full_name: name, // Key 'full_name' komt overeen met de trigger
-                    avatar_url: profilePictureUrl || null // Key 'avatar_url' komt overeen met de trigger
+                    avatar_url: uploadedImageUrl  // Key 'avatar_url' komt overeen met de trigger
                 };
 
                 const { data, error } = await supabase.auth.signUp({
@@ -136,10 +223,12 @@
                     authMessage.textContent = 'Registratie succesvol! Controleer je e-mail voor de bevestigingslink.';
                     authMessage.className += ' text-green-500';
                     registerForm.reset(); // Reset het formulier na succes
-                     // Optioneel: doorsturen na x seconden
-                    // setTimeout(() => {
-                    //    window.location.href = 'login.html';
-                    // }, 5000);
+                    document.getElementById('profielfotoPreview').src = '#';
+                    document.getElementById('profielfotoPreview').classList.add('hidden');
+                    //  Optioneel: doorsturen na x seconden
+                    setTimeout(() => {
+                       window.location.href = 'login.html';
+                    }, 5000);
                 } else {
                      authMessage.textContent = 'Er is een onbekende fout opgetreden tijdens de registratie. Probeer het later opnieuw.';
                      authMessage.className += ' text-red-500';

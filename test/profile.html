@@ -56,23 +56,23 @@
                     <p id="userEmail" class="text-gray-600 mb-2">gebruiker@example.com</p>
                     <p class="text-sm text-gray-500">Lid sinds: <span id="memberSince">01-01-2025</span></p>
                     <div class="mt-4 flex flex-wrap justify-center md:justify-start gap-4">
-                        <div class="bg-orange-100 text-orange-700 p-3 rounded-lg text-center">
+                        <div class="bg-orange-200 text-orange-700 p-3 rounded-lg text-center">
                             <p class="text-2xl font-bold" id="totalSpots">0</p>
                             <p class="text-sm">Spots</p>
                         </div>
-                        <div class="bg-red-100 text-red-700 p-3 rounded-lg text-center">
+                        <div class="bg-red-200 text-red-700 p-3 rounded-lg text-center">
                             <p class="text-2xl font-bold" id="totalLikes">0</p>
                             <p class="text-sm">Likes Ontvangen</p>
                         </div>
-                        <div class="bg-blue-100 text-blue-700 p-3 rounded-lg text-center">
+                        <div class="bg-blue-200 text-blue-700 p-3 rounded-lg text-center">
                             <p class="text-2xl font-bold" id="totalComments">0</p>
                             <p class="text-sm">Reacties Ontvangen</p>
                         </div>
                     </div>
                     <div class="mt-6">
-                        <button id="editProfileButton" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center">
+                        <a href="edit-profile.html" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center">
                             <i class="fas fa-edit mr-2"></i> Profiel Bewerken
-                        </button>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -238,7 +238,7 @@
                                         <span class="text-sm text-gray-700"><i class="fas fa-comments text-blue-500"></i> ${reactiesCount} Reacties</span>
                                         <div>
                                             <a href="edit-spot.html?id=${spot.id}" class="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 mr-1" title="Bewerk spot"><i class="fas fa-pencil-alt"></i></a>
-                                            <button data-spot-id="${spot.id}" class="deleteSpotButton text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600" title="Verwijder spot"><i class="fas fa-trash"></i></button>
+                                            <button data-spot-id="${spot.id}" data-spot-merk="${spot.merk}" data-spot-model="${spot.model}" class="deleteSpotButton text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600" title="Verwijder spot"><i class="fas fa-trash"></i></button>
                                         </div>
                                     </div>
                                 </div>
@@ -272,7 +272,9 @@
 
                     newButton.addEventListener('click', async (event) => {
                         const spotIdToDelete = event.currentTarget.dataset.spotId;
-                        if (confirm(`Weet je zeker dat je spot ID ${spotIdToDelete} wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.`)) {
+                        const spotMerk = event.currentTarget.dataset.spotMerk || 'Onbekend';
+                        const spotModel = event.currentTarget.dataset.spotModel || 'Onbekend';
+                        if (confirm(`Weet je zeker dat je spot ${spotMerk} ${spotModel} wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.`)) {
                             // 1. Verwijder afbeelding uit Storage (optioneel, maar goed voor opschoning)
                             // Hiervoor heb je het pad/bestandsnaam nodig. Als je die niet hebt opgeslagen bij de spot,
                             // kun je proberen de afbeelding_url te parsen, of dit overslaan.

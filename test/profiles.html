@@ -53,18 +53,17 @@
                 <img id="profilePicture" src="https://via.placeholder.com/150.png?text=User" alt="Profielfoto" class="w-32 h-32 rounded-full object-cover mb-6 md:mb-0 md:mr-8 border-4 border-orange-500">
                 <div class="text-center md:text-left">
                     <h1 id="userName" class="text-3xl md:text-4xl font-bold text-gray-800">Gebruikersnaam</h1>
-                    <p id="userEmail" class="text-gray-600 mb-2">gebruiker@example.com</p>
                     <p class="text-sm text-gray-500">Lid sinds: <span id="memberSince">01-01-2025</span></p>
                     <div class="mt-4 flex flex-wrap justify-center md:justify-start gap-4">
-                        <div class="bg-orange-100 text-orange-700 p-3 rounded-lg text-center">
+                        <div class="bg-orange-200 text-orange-700 p-3 rounded-lg text-center">
                             <p class="text-2xl font-bold" id="totalSpots">0</p>
                             <p class="text-sm">Spots</p>
                         </div>
-                        <div class="bg-red-100 text-red-700 p-3 rounded-lg text-center">
+                        <div class="bg-red-200 text-red-700 p-3 rounded-lg text-center">
                             <p class="text-2xl font-bold" id="totalLikes">0</p>
                             <p class="text-sm">Likes Ontvangen</p>
                         </div>
-                        <div class="bg-blue-100 text-blue-700 p-3 rounded-lg text-center">
+                        <div class="bg-blue-200 text-blue-700 p-3 rounded-lg text-center">
                             <p class="text-2xl font-bold" id="totalComments">0</p>
                             <p class="text-sm">Reacties Ontvangen</p>
                         </div>
@@ -112,211 +111,179 @@
         </div>
     </footer>
 
-    <script src="js/script.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            const currentYearSpan = document.getElementById('currentYear');
-            if (currentYearSpan) {
-                currentYearSpan.textContent = new Date().getFullYear();
-            }
+<script src="js/script.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const currentYearSpan = document.getElementById('currentYear');
+        if (currentYearSpan) {
+            currentYearSpan.textContent = new Date().getFullYear();
+        }
 
-            // Elementen voor profielinformatie
-            const profilePictureElem = document.getElementById('profilePicture');
-            const userNameElem = document.getElementById('userName');
-            const userEmailElem = document.getElementById('userEmail');
-            const memberSinceElem = document.getElementById('memberSince');
-            const totalSpotsElem = document.getElementById('totalSpots');
-            const editProfileButton = document.getElementById('editProfileButton');
+        // Elementen voor profielinformatie
+        const profilePictureElem = document.getElementById('profilePicture');
+        const userNameElem = document.getElementById('userName');
+        const memberSinceElem = document.getElementById('memberSince');
+        const totalSpotsElem = document.getElementById('totalSpots');
+        const totalLikesElem = document.getElementById('totalLikes');
+        const totalCommentsElem = document.getElementById('totalComments');
 
-            // Elementen voor spots van gebruiker
-            const userSpotsContainer = document.getElementById('userSpotsContainer');
-            const noUserSpotsMessage = document.getElementById('noUserSpotsMessage');
-            const mainContent = document.querySelector('main.container');
+        // Elementen voor spots van gebruiker
+        const userSpotsContainer = document.getElementById('userSpotsContainer');
+        const noUserSpotsMessage = document.getElementById('noUserSpotsMessage');
+        const mainContent = document.querySelector('main.container');
 
+        if (!supabase) {
+            mainContent.innerHTML = '<p class="text-center text-red-500 text-xl py-10">Supabase client niet geladen.</p>';
+            return;
+        }
 
-            if (!supabase) {
-                mainContent.innerHTML = '<p class="text-center text-red-500 text-xl py-10">Supabase client niet geladen.</p>';
+        // We halen de ingelogde gebruiker op, maar gebruiken deze NIET om de pagina te beveiligen
+        // of te bepalen welke knoppen getoond worden op DIT profiel.
+        // Dit is alleen voor navigatie in de header (van script.js) en om te zien of een gebruiker
+        // toevallig zijn eigen profiel bekijkt (maar zonder speciale knoppen hier).
+        const loggedInUserSession = await supabase.auth.getSession();
+        const currentUser = loggedInUserSession.data.session ? loggedInUserSession.data.session.user : null;
+
+        // Haal userId uit URL
+        const params = new URLSearchParams(window.location.search);
+        let profileUserId = params.get('id');
+
+        // Als er geen ID in de URL staat, en de gebruiker is ingelogd, toon dan het eigen profiel
+        // Anders (geen ID en niet ingelogd), geef een melding
+        if (!profileUserId) {
+            if (currentUser) {
+                profileUserId = currentUser.id;
+                // Optioneel: redirect naar de URL met de ID van de ingelogde gebruiker voor een consistente URL
+                // window.history.replaceState(null, '', `profiles.html?id=${currentUser.id}`);
+            } else {
+                mainContent.innerHTML = '<p class="text-center text-gray-600 text-xl py-10">Geen profiel geselecteerd. Gebruik <a href="profiles.html?id=EN_ID_HIER" class="text-orange-500 hover:underline">profiles.html?id=[gebruikers-ID]</a> om een specifiek profiel te bekijken, of log in en navigeer naar <a href="profile.html" class="text-orange-500 hover:underline">Mijn Profiel</a> om uw eigen profiel te beheren.</p>';
                 return;
             }
+        }
+        
+        // Zorg ervoor dat de 'Mijn Gespotte Auto's' titel dynamisch is
+        const userSpotsTitleElem = document.getElementById('userSpotsTitle');
 
-            const user = await getCurrentUser(); // Functie uit script.js (zorgt ook voor redirect als niet ingelogd)
 
-            if (!user) {
-                // getCurrentUser in script.js zou al moeten doorsturen, maar als extra check:
-                if (!window.location.pathname.endsWith('login.html')) { // Voorkom redirect loop
-                   // window.location.href = 'login.html'; // Wordt al afgehandeld door protectPage in script.js
-                }
-                mainContent.innerHTML = '<p class="text-center text-gray-600 text-xl py-10">Je moet ingelogd zijn om je profiel te bekijken. Je wordt doorgestuurd...</p>';
-                return;
+        /**
+         * Haalt profielinformatie op van de opgegeven gebruiker.
+         */
+        async function fetchUserProfile(userId) {
+            const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('naam, profielfoto_url, updated_at') // Gebruik 'updated_at' zoals je hebt vastgesteld
+                .eq('id', userId)
+                .single();
+
+            if (error) {
+                console.error("Fout bij ophalen gebruikersprofiel:", error);
+                return null;
             }
+            return profile;
+        }
 
-            /**
-             * Haalt profielinformatie op van de ingelogde gebruiker.
-             */
-            async function fetchUserProfile() {
-                const { data: profile, error } = await supabase
-                    .from('profiles')
-                    .select('naam, profielfoto_url')
-                    .eq('id', user.id)
-                    .single();
+        /**
+         * Haalt spots op die door de opgegeven gebruiker zijn toegevoegd.
+         */
+        async function fetchUserSpots(userId) {
+            const { data: spots, error } = await supabase
+                .from('spots')
+                .select(`
+                    *,
+                    likes ( count ),
+                    reacties:reacties ( count )
+                `)
+                .eq('user_id', userId)
+                .order('datum', { ascending: false });
 
-                if (error) {
-                    console.error("Fout bij ophalen gebruikersprofiel:", error);
-                    return null;
-                }
-
-                document.getElementById('userSpotsTitle').textContent = `${profile.naam}’s Gespotte Auto’s`;
-
-                return profile;
+            if (error) {
+                console.error("Fout bij ophalen gebruikersspots:", error);
+                return [];
             }
+            return spots || [];
+        }
 
-            /**
-             * Haalt spots op die door de huidige gebruiker zijn toegevoegd.
-             */
-            async function fetchUserSpots() {
-                const { data: spots, error } = await supabase
-                    .from('spots')
-                    .select(`
-                        *,
-                        likes ( count ),
-                        reacties:reacties ( count )
-                    `)
-                    .eq('user_id', user.id)
-                    .order('datum', { ascending: false });
+        /**
+         * Rendert de profielinformatie.
+         */
+        function renderUserProfile(profileData) {
+            const displayName = profileData?.naam || (profileData?.email ? profileData.email.split('@')[0] : 'Onbekende Gebruiker');
+            document.title = `Profiel van ${displayName} - SpotThatRide`;
+            userNameElem.textContent = displayName;
+            
+            // Gebruik 'updated_at' voor 'Lid sinds' (of 'created_at' als die kolom wel bestaat en gevuld is)
+            memberSinceElem.textContent = profileData?.updated_at ? new Date(profileData.updated_at).toLocaleDateString('nl-NL', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Onbekende datum';
+            
+            profilePictureElem.src = profileData?.profielfoto_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random&size=128`;
+            profilePictureElem.alt = `Profielfoto van ${displayName}`;
+            userSpotsTitleElem.textContent = `${profileData?.naam || 'De gebruiker'}’s Gespotte Auto’s`; // Update title based on profile name
+        }
 
-                if (error) {
-                    console.error("Fout bij ophalen gebruikersspots:", error);
-                    return [];
-                }
-                return spots || [];
-            }
+        /**
+         * Rendert de spots van de gebruiker.
+         */
+        function renderUserSpots(spots, currentProfileId) { // Verwijder loggedInUserId parameter
+            userSpotsContainer.innerHTML = ''; // Leegmaken
+            let totaalReacties = 0;
+            let totaalLikesOntvangen = 0;
 
-            /**
-             * Rendert de profielinformatie.
-             */
-            function renderUserProfile(profileData) {
-                document.title = `Profiel van ${profileData?.naam || user.email} - SpotThatRide`;
-                userNameElem.textContent = profileData?.naam || user.email.split('@')[0]; // Gebruik naam uit profiel, anders deel van email
-                userEmailElem.textContent = user.email;
-                memberSinceElem.textContent = new Date(user.created_at).toLocaleDateString('nl-NL', { year: 'numeric', month: 'long', day: 'numeric' });
-                profilePictureElem.src = profileData?.profielfoto_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profileData?.naam || user.email)}&background=random&size=128`;
-                profilePictureElem.alt = `Profielfoto van ${profileData?.naam || user.email}`;
-            }
+            if (spots.length === 0) {
+                noUserSpotsMessage.classList.remove('hidden');
+                // Altijd deze melding tonen als er geen spots zijn, zonder link voor toevoegen
+                noUserSpotsMessage.innerHTML = '<p class="text-xl">Deze gebruiker heeft nog geen auto\'s gespot.</p>';
+            } else {
+                noUserSpotsMessage.classList.add('hidden');
+                spots.forEach(spot => {
+                    const likesCount = spot.likes && spot.likes[0] ? spot.likes[0].count : 0;
+                    const reactiesCount = spot.reacties?.[0]?.count || 0;
+                    totaalReacties += reactiesCount;
+                    totaalLikesOntvangen += likesCount;
 
-            /**
-             * Rendert de spots van de gebruiker.
-             */
-            function renderUserSpots(spots) {
-                userSpotsContainer.innerHTML = ''; // Leegmaken
-                let totaalReacties = 0;
+                    // GEEN BEWERK/VERWIJDER KNOPPEN HIER
+                    const actionButtons = ''; // Leeg laten, geen knoppen tonen
 
-                if (spots.length === 0) {
-                    noUserSpotsMessage.classList.remove('hidden');
-                } else {
-                    noUserSpotsMessage.classList.add('hidden');
-                    spots.forEach(spot => {
-                        const likesCount = spot.likes && spot.likes[0] ? spot.likes[0].count : 0;
-                        const reactiesCount = spot.reacties?.[0]?.count || 0;
-                        totaalReacties += reactiesCount;
-
-                        const spotCard = `
-                            <div class="spot-card bg-white rounded-lg shadow-lg overflow-hidden">
-                                <a href="spot-detail.html?id=${spot.id}">
-                                    <img src="${spot.afbeelding_url || 'https://via.placeholder.com/400x250.png?text=Geen+Afbeelding'}" alt="${spot.merk} ${spot.model}" class="w-full h-48 object-cover">
-                                </a>
-                                <div class="p-4">
-                                    <h3 class="text-lg font-bold mb-1"><a href="spot-detail.html?id=${spot.id}" class="hover:text-orange-600">${spot.merk} ${spot.model}</a></h3>
-                                    <p class="text-xs text-gray-500 mb-2">${new Date(spot.datum).toLocaleDateString('nl-NL')}</p>
-                                    <div class="flex items-center justify-between mt-3">
-                                        <span class="text-sm text-gray-700"><i class="fas fa-heart text-red-500"></i> ${likesCount} Likes</span>
-                                        <span class="text-sm text-gray-700"><i class="fas fa-comments text-blue-500"></i> ${reactiesCount} Reacties</span>
-                                    </div>
+                    const spotCard = `
+                        <div class="spot-card bg-white rounded-lg shadow-lg overflow-hidden">
+                            <a href="spot-detail.html?id=${spot.id}">
+                                <img src="${spot.afbeelding_url || 'https://via.placeholder.com/400x250.png?text=Geen+Afbeelding'}" alt="${spot.merk} ${spot.model}" class="w-full h-48 object-cover">
+                            </a>
+                            <div class="p-4">
+                                <h3 class="text-lg font-bold mb-1"><a href="spot-detail.html?id=${spot.id}" class="hover:text-orange-600">${spot.merk} ${spot.model}</a></h3>
+                                <p class="text-xs text-gray-500 mb-2">${new Date(spot.datum).toLocaleDateString('nl-NL')}</p>
+                                <div class="flex items-center justify-between mt-3">
+                                    <span class="text-sm text-gray-700"><i class="fas fa-heart text-red-500"></i> ${likesCount} Likes</span>
+                                    <span class="text-sm text-gray-700"><i class="fas fa-comments text-blue-500"></i> ${reactiesCount} Reacties</span>
                                 </div>
                             </div>
                         </div>
-                        `;
-                        userSpotsContainer.insertAdjacentHTML('beforeend', spotCard);
-                    });
-                    addDeleteEventListeners(); // Voeg listeners toe na het renderen
-                }
-                // Totaal aantal likes over alle spots optellen
-                const totalLikes = spots.reduce((acc, spot) => {
-                    const count = spot.likes && spot.likes[0] ? spot.likes[0].count : 0;
-                    return acc + count;
-                }, 0);
-
-                // Elementen bijwerken
-                totalSpotsElem.textContent = spots.length;
-                document.getElementById('totalLikes').textContent = totalLikes;
-                document.getElementById('totalComments').textContent = totaalReacties;
-            }
-            
-            /**
-             * Voegt event listeners toe aan de delete knoppen.
-             */
-            function addDeleteEventListeners() {
-                document.querySelectorAll('.deleteSpotButton').forEach(button => {
-                    // Verwijder eventuele oude listener om duplicaten te voorkomen
-                    const newButton = button.cloneNode(true);
-                    button.parentNode.replaceChild(newButton, button);
-
-                    newButton.addEventListener('click', async (event) => {
-                        const spotIdToDelete = event.currentTarget.dataset.spotId;
-                        if (confirm(`Weet je zeker dat je spot ID ${spotIdToDelete} wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.`)) {
-                            // 1. Verwijder afbeelding uit Storage (optioneel, maar goed voor opschoning)
-                            // Hiervoor heb je het pad/bestandsnaam nodig. Als je die niet hebt opgeslagen bij de spot,
-                            // kun je proberen de afbeelding_url te parsen, of dit overslaan.
-                            // Voorbeeld (als afbeelding_url de volledige publieke URL is):
-                            // const spotToDelete = userSpots.find(s => s.id == spotIdToDelete);
-                            // if (spotToDelete && spotToDelete.afbeelding_url) {
-                            // try {
-                            // const filePath = new URL(spotToDelete.afbeelding_url).pathname.split('/spot-afbeeldingen/')[1];
-                            // if (filePath) await supabase.storage.from('spot-afbeeldingen').remove([filePath]);
-                            // } catch (e) { console.warn("Kon afbeelding niet verwijderen uit storage:", e); }
-                            // }
-
-                            // 2. Verwijder spot uit database
-                            const { error: deleteError } = await supabase
-                                .from('spots')
-                                .delete()
-                                .eq('id', spotIdToDelete)
-                                .eq('user_id', user.id); // Extra check dat de gebruiker eigenaar is
-
-                            if (deleteError) {
-                                console.error('Fout bij verwijderen spot:', deleteError);
-                                alert(`Verwijderen van spot mislukt: ${deleteError.message}`);
-                            } else {
-                                alert('Spot succesvol verwijderd.');
-                                // Herlaad spots om de UI bij te werken
-                                const updatedSpots = await fetchUserSpots();
-                                renderUserSpots(updatedSpots);
-                            }
-                        }
-                    });
+                    `;
+                    userSpotsContainer.insertAdjacentHTML('beforeend', spotCard);
                 });
             }
+            // Elementen bijwerken
+            totalSpotsElem.textContent = spots.length;
+            totalLikesElem.textContent = totaalLikesOntvangen;
+            totalCommentsElem.textContent = totaalReacties;
+        }
+        
+        // Verwijder de addDeleteEventListeners functie, deze is niet meer nodig op deze pagina
 
-            // Initieel laden van data
-            const userProfileData = await fetchUserProfile();
-            if (userProfileData || user) { // Toon basisinfo zelfs als profiel niet volledig is
-                renderUserProfile(userProfileData); // userProfileData kan null zijn, renderUserProfile handelt dat af
-            }
+        // Initieel laden van data
+        const userProfileData = await fetchUserProfile(profileUserId);
+        if (userProfileData) {
+            renderUserProfile(userProfileData);
+        } else {
+             mainContent.innerHTML = '<p class="text-center text-gray-600 text-xl py-10">Profiel niet gevonden.</p>';
+             return;
+        }
+        
+        const userSpotsData = await fetchUserSpots(profileUserId);
+        renderUserSpots(userSpotsData, profileUserId); // Verwijder loggedInUserId parameter
 
-            const userSpotsData = await fetchUserSpots();
-            renderUserSpots(userSpotsData);
-
-            // TODO: Statistieken zoals totaal ontvangen likes/comments (vereist complexere queries of RPCs)
-            totalLikesReceivedElem.textContent = 'N/A';
-            totalCommentsReceivedElem.textContent = 'N/A';
-
-
-            editProfileButton.addEventListener('click', () => {
-                // TODO: Navigeer naar een edit-profile.html pagina of open een modal
-                alert('Profiel bewerken functionaliteit wordt nog geïmplementeerd.');
-            });
-
-            // De logout knop wordt al afgehandeld door de globale script.js
-        });
-    </script>
+        // Verwijder alle code die de 'editProfileButton' beheert, deze hoort niet op profiles.html
+        // totalLikesReceivedElem en totalCommentsReceivedElem zijn niet meer relevant hier
+        // omdat de totale likes en comments nu per spot zijn verwerkt.
+    });
+</script>
 </body>
 </html>

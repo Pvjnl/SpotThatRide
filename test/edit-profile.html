@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profiel Bewerken</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Profiel Bewerken</h1>
+    </header>
+    <main>
+        <section id="profile-edit-section">
+            <h2>Bewerk je gegevens</h2>
+            <form id="profile-form">
+                <label for="username">Gebruikersnaam:</label>
+                <input type="text" id="username" required>
+
+                <label for="profile-image">Profielfoto:</label>
+                <input type="file" id="profile-image" accept="image/*">
+                <img id="current-profile-image" src="" alt="Huidige Profielfoto" style="max-width: 150px; max-height: 150px; display: none;">
+
+                <button type="submit">Profiel Opslaan</button>
+            </form>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="script.js"></script> <script src="auth.js"></script> <script>
+        // Functie om de huidige gebruiker op te halen (moet ergens in script.js of auth.js staan)
+        // Voorbeeld:
+        // async function getCurrentUser() {
+        //     const { data: { user } } = await supabase.auth.getUser();
+        //     return user;
+        // }
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            const usernameInput = document.getElementById('username');
+            const profileImageInput = document.getElementById('profile-image');
+            const currentProfileImage = document.getElementById('current-profile-image');
+            const profileForm = document.getElementById('profile-form');
+
+            let currentUser = await getCurrentUser();
+            console.log("DEBUG: Current User ID:", currentUser ? currentUser.id : "GEEN gebruiker ingelogd");
+
+            if (!currentUser) {
+                alert('Je moet ingelogd zijn om je profiel te bewerken.');
+                window.location.href = 'login.html'; // Of een andere inlogpagina
+                return;
+            }
+
+            // Functie om de huidige profielgegevens op te halen
+            async function fetchProfile() {
+                const { data: profile, error } = await supabase
+                    .from('profiles')
+                    .select('username, avatar_url') // Selecteer de velden die je nodig hebt
+                    .eq('id', currentUser.id)
+                    .single();
+
+                if (error) {
+                    console.error('Fout bij ophalen profiel:', error.message);
+                    alert('Fout bij ophalen profielgegevens.');
+                } else if (profile) {
+                    usernameInput.value = profile.username;
+                    if (profile.avatar_url) {
+                        currentProfileImage.src = profile.avatar_url;
+                        currentProfileImage.style.display = 'block';
+                    }
+                }
+            }
+
+            await fetchProfile(); // Laad profiel bij paginabelasting
+
+            profileForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const newUsername = usernameInput.value;
+                const file = profileImageInput.files[0];
+
+                let avatarUrl = null; // Start met null, update alleen als er een nieuwe foto is
+
+                // Stap 1: Upload de profielfoto als er een nieuwe is geselecteerd
+                if (file) {
+                    const fileExt = file.name.split('.').pop();
+                    const filePath = `profiles/${currentUser.id}/${Date.now()}.${fileExt}`; // Consistent pad met UUID als map
+
+                    console.log("DEBUG: Gegenereerde filePath voor upload:", filePath);
+                    console.log("DEBUG: Bestand voor upload:", file);
+
+                    const { data: uploadData, error: uploadError } = await supabase.storage
+                        .from('profile-pictures') // Zorg dat dit de correcte bucket naam is
+                        .upload(filePath, file, {
+                            upsert: true // Bestaat al, overschrijven
+                        });
+
+                    if (uploadError) {
+                        console.error('Fout bij uploaden profielfoto:', uploadError);
+                        alert(`Fout bij uploaden profielfoto: ${uploadError.message}`);
+                        return; // Stop de update als de upload mislukt
+                    }
+
+                    // Krijg de publieke URL van de geüploade foto
+                    const { data: publicUrlData } = supabase.storage
+                        .from('profile-pictures')
+                        .getPublicUrl(filePath);
+                    avatarUrl = publicUrlData.publicUrl;
+                    console.log("DEBUG: Public URL na upload:", avatarUrl);
+                }
+
+                // Stap 2: Update de profielgegevens in de database
+                const updates = {
+                    id: currentUser.id,
+                    username: newUsername,
+                    updated_at: new Date().toISOString()
+                };
+                if (avatarUrl) {
+                    updates.avatar_url = avatarUrl; // Voeg alleen toe als er een nieuwe URL is
+                }
+
+                console.log("DEBUG: Updates voor profiel:", updates);
+
+                const { error: updateError } = await supabase
+                    .from('profiles')
+                    .update(updates)
+                    .eq('id', currentUser.id);
+
+                if (updateError) {
+                    console.error('Fout bij bijwerken profiel:', updateError);
+                    alert(`Fout bij bijwerken profiel: ${updateError.message}`);
+                } else {
+                    alert('Profiel succesvol bijgewerkt!');
+                    await fetchProfile(); // Herlaad profiel om nieuwe foto te tonen
+                }
+            });
+        });
+    </script>
+</body>
+</html>
